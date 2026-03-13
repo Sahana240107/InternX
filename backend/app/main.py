@@ -17,15 +17,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from app.routers import auth, tasks
-app.include_router(auth.router,  prefix="/api/auth",  tags=["Auth"])
-app.include_router(tasks.router, prefix="/api/tasks", tags=["Tasks"])
-
-# Uncomment as you build each module:
-# from app.routers import mentor, github, portfolio
-# app.include_router(mentor.router,    prefix="/api/mentor",    tags=["Mentor"])
-# app.include_router(github.router,    prefix="/api/github",    tags=["GitHub"])
-# app.include_router(portfolio.router, prefix="/api/portfolio", tags=["Portfolio"])
+from app.routers import auth, tasks, projects
+app.include_router(auth.router,   prefix="/api/auth",     tags=["Auth"])
+app.include_router(tasks.router,  prefix="/api/tasks",    tags=["Tasks"])
+app.include_router(projects.router)
 
 @app.get("/")
 def root():

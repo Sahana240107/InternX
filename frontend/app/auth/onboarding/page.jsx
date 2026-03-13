@@ -30,7 +30,7 @@ export default function OnboardingPage() {
     document.cookie = `internx-token=${token}; path=/; max-age=604800; SameSite=Lax`
     toast.success('Welcome to InternX! 🎉')
     setTimeout(() => {
-      window.location.href = '/dashboard'
+      window.location.href = '/internship/project'
     }, 500)
   } catch {
     toast.error('Something went wrong')

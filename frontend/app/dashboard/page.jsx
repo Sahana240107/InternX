@@ -113,12 +113,16 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-  // Wait for Zustand to rehydrate from localStorage before checking
-  const timer = setTimeout(() => {
-    if (!user) {
-      router.push('/auth/login')
-      return
-    }
+    const timer = setTimeout(async () => {
+      if (!user) { router.push('/auth/login'); return }
+      try {
+        const api = (await import('@/lib/api')).default
+        const res = await api.get('/api/auth/me')
+        if (!res.data.project_id) {
+          router.push('/internship/project')
+          return
+        }
+      } catch {}
       loadData()
     }, 100)
     return () => clearTimeout(timer)

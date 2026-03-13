@@ -1,0 +1,38 @@
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from app.core.config import settings
+
+app = FastAPI(
+    title="InternX API",
+    description="AI-Powered Virtual Internship Simulator Backend",
+    version="1.0.0",
+    docs_url="/docs" if settings.environment == "development" else None,
+)
+
+# CORS — allow Next.js frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[settings.frontend_url, "http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# ─── Routers ─────────────────────────────────────────────────
+from app.routers import auth
+app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
+
+# Uncomment as you build each module:
+# from app.routers import tasks, mentor, github, portfolio
+# app.include_router(tasks.router,     prefix="/api/tasks",     tags=["Tasks"])
+# app.include_router(mentor.router,    prefix="/api/mentor",    tags=["Mentor"])
+# app.include_router(github.router,    prefix="/api/github",    tags=["GitHub"])
+# app.include_router(portfolio.router, prefix="/api/portfolio", tags=["Portfolio"])
+
+@app.get("/")
+def root():
+    return {"status": "ok", "app": "InternX API", "version": "1.0.0"}
+
+@app.get("/health")
+def health():
+    return {"status": "healthy"}

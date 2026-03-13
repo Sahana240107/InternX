@@ -19,7 +19,7 @@ app.add_middleware(
 
 from app.routers import auth, tasks, projects
 app.include_router(auth.router,   prefix="/api/auth",     tags=["Auth"])
-app.include_router(tasks.router,  prefix="/api/tasks",    tags=["Tasks"])
+app.include_router(tasks.router)
 app.include_router(projects.router)
 
 @app.get("/")

@@ -110,8 +110,10 @@ export default function ProjectPage() {
   }
 
   const handleStartSprint = () => {
-    router.push('/dashboard')
-  }
+  // Mark project as seen so dashboard doesn't redirect back
+  localStorage.setItem('internx-project-seen', 'true')
+  router.push('/dashboard')
+}
 
   if (loading) {
     return (

@@ -1,19 +1,18 @@
 import api from '@/lib/api'
 
 export const taskApi = {
-  // Sprints
-  getSprints:        ()                    => api.get('/api/tasks/sprints'),
-  getActiveSprints:  ()                    => api.get('/api/tasks/sprints/active'),
-  getSprintProgress: (id)                  => api.get(`/api/tasks/sprints/${id}/progress`),
-  createSprint:      (data)                => api.post('/api/tasks/sprints', data),
+  // Get tasks for the current intern's assigned project only
+  getMyTasks: () => api.get('/api/tasks/my-tasks'),
 
-  // Tasks
-  getMyTasks:        ()                    => api.get('/api/tasks/my'),
-  getSprintTasks:    (sprintId)            => api.get(`/api/tasks/sprint/${sprintId}`),
-  getTask:           (id)                  => api.get(`/api/tasks/${id}`),
-  createTask:        (data)                => api.post('/api/tasks/', data),
-  updateStatus:      (id, status)          => api.put(`/api/tasks/${id}/status`, { status }),
-  submitPR:          (id, pr_url)          => api.put(`/api/tasks/${id}/submit`, { pr_url }),
-  scoreTask:         (id, score, feedback) => api.put(`/api/tasks/${id}/score`, { score, feedback }),
-  getLeaderboard:    (sprintId)            => api.get(`/api/tasks/leaderboard/${sprintId}`),
+  // Get active sprint for current intern's project
+  getActiveSprints: () => api.get('/api/tasks/sprints/active'),
+
+  // Get a single task
+  getTask: (id) => api.get(`/api/tasks/${id}`),
+
+  // Update task status
+  updateTaskStatus: (id, status) => api.patch(`/api/tasks/${id}/status`, { status }),
+
+  // Update full task
+  updateTask: (id, data) => api.patch(`/api/tasks/${id}`, data),
 }

@@ -9,7 +9,6 @@ app = FastAPI(
     docs_url="/docs" if settings.environment == "development" else None,
 )
 
-# CORS — allow Next.js frontend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[settings.frontend_url, "http://localhost:3000"],
@@ -18,13 +17,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ─── Routers ─────────────────────────────────────────────────
-from app.routers import auth
-app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
+from app.routers import auth, tasks
+app.include_router(auth.router,  prefix="/api/auth",  tags=["Auth"])
+app.include_router(tasks.router, prefix="/api/tasks", tags=["Tasks"])
 
 # Uncomment as you build each module:
-# from app.routers import tasks, mentor, github, portfolio
-# app.include_router(tasks.router,     prefix="/api/tasks",     tags=["Tasks"])
+# from app.routers import mentor, github, portfolio
 # app.include_router(mentor.router,    prefix="/api/mentor",    tags=["Mentor"])
 # app.include_router(github.router,    prefix="/api/github",    tags=["GitHub"])
 # app.include_router(portfolio.router, prefix="/api/portfolio", tags=["Portfolio"])

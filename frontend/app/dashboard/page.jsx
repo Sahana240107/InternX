@@ -110,39 +110,45 @@ export default function DashboardPage() {
   const router = useRouter()
   const [tasks,   setTasks]   = useState([])
   const [sprint,  setSprint]  = useState(null)
+  const [project, setProject] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const timer = setTimeout(async () => {
-  if (!user) { router.push('/auth/login'); return }
-
-  // Skip if user already saw the project page
-  const projectSeen = localStorage.getItem('internx-project-seen')
-  if (!projectSeen) {
-    try {
-      const api = (await import('@/lib/api')).default
-      const res = await api.get('/api/auth/me')
-      if (!res.data.project_id) {
-        router.push('/internship/project')
-        return
+      if (!user) { router.push('/auth/login'); return }
+      try {
+        const api = (await import('@/lib/api')).default
+        const res = await api.get('/api/auth/me')
+        // If user has no project yet, send them to project page first
+        if (!res.data.project_id) {
+          router.push('/internship/project')
+          return
+        }
+        // Load project info for the banner
+        const projectRes = await api.get(`/api/projects/${res.data.project_id}`)
+        setProject(projectRes.data)
+      } catch (err) {
+        console.error('Failed to load profile', err)
       }
-    } catch {}
-  }
-  loadData()
-}, 100)
+      await loadData()
+    }, 100)
     return () => clearTimeout(timer)
   }, [user])
 
   const loadData = async () => {
     try {
-      const [tasksRes, sprintsRes] = await Promise.all([
+      // Both calls match the actual backend routes in tasks.py
+      const [tasksRes, sprintRes] = await Promise.all([
         taskApi.getMyTasks(),
-        taskApi.getActiveSprints(),
+        taskApi.getActiveSprint().catch(() => ({ data: [] })),
       ])
-      setTasks(tasksRes.data || [])
-      if (sprintsRes.data?.length > 0) setSprint(sprintsRes.data[0])
-    } catch {
-      toast.error('Failed to load data')
+      setTasks(Array.isArray(tasksRes.data) ? tasksRes.data : [])
+      // Backend returns an array — take the first item
+      const sprintData = Array.isArray(sprintRes.data) ? sprintRes.data[0] : null
+      setSprint(sprintData || null)
+    } catch (err) {
+      console.error('Failed to load data', err)
+      toast.error('Failed to load tasks')
     } finally {
       setLoading(false)
     }
@@ -177,6 +183,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen" style={{ background: 'var(--surface)' }}>
+
       {/* Navbar */}
       <header className="sticky top-0 z-40 px-6 h-16 flex items-center justify-between"
         style={{ background: 'rgba(248,248,252,0.8)', backdropFilter: 'blur(12px)', borderBottom: '1px solid var(--border)' }}>
@@ -187,15 +194,15 @@ export default function DashboardPage() {
         </div>
         <nav className="hidden md:flex items-center gap-1">
           {[
-            { label: 'Dashboard', href: '/dashboard', active: true },
-            { label: 'Tasks',     href: '/internship/tasks' },
-            { label: 'AI Mentor', href: '/mentor' },
-            { label: 'Portfolio', href: '/portfolio' },
+            { label: 'Dashboard', href: '/dashboard',        active: true  },
+            { label: 'Tasks',     href: '/internship/tasks', active: false },
+            { label: 'AI Mentor', href: '/mentor',           active: false },
+            { label: 'Portfolio', href: '/portfolio',        active: false },
           ].map(item => (
             <Link key={item.label} href={item.href}
               className="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-150"
               style={{
-                color: item.active ? 'var(--accent)' : 'var(--ink-soft)',
+                color:      item.active ? 'var(--accent)'      : 'var(--ink-soft)',
                 background: item.active ? 'var(--accent-soft)' : 'transparent',
               }}>
               {item.label}
@@ -203,6 +210,12 @@ export default function DashboardPage() {
           ))}
         </nav>
         <div className="flex items-center gap-3">
+          {/* Back to project page */}
+          <Link href="/internship/project"
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 hover:scale-105"
+            style={{ background: 'var(--accent-soft)', color: 'var(--accent)', border: '1px solid rgba(91,79,255,0.2)' }}>
+            🏢 My Project
+          </Link>
           <div className="flex items-center gap-2.5">
             {user?.avatar_url ? (
               <Image src={user.avatar_url} alt={user.name || 'User'} width={32} height={32}
@@ -220,6 +233,31 @@ export default function DashboardPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-6 py-8">
+
+        {/* Project banner */}
+        {project && (
+          <Link href="/internship/project"
+            className="flex items-center justify-between p-4 rounded-2xl mb-6 animate-fade-up transition-all hover:scale-[1.01] cursor-pointer"
+            style={{
+              background: `linear-gradient(135deg, ${project.company_color}12, ${project.company_color}06)`,
+              border: `1px solid ${project.company_color}30`,
+            }}>
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">{project.company_emoji}</span>
+              <div>
+                <p className="text-xs font-semibold" style={{ color: project.company_color }}>Currently interning at</p>
+                <p className="font-display font-bold text-sm" style={{ color: 'var(--ink)' }}>
+                  {project.company_name} — {project.project_title}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-lg"
+              style={{ background: project.company_color, color: 'white' }}>
+              View Project →
+            </div>
+          </Link>
+        )}
+
         {/* Welcome */}
         <div className="mb-8 animate-fade-up">
           <h1 className="text-3xl font-display mb-1" style={{ color: 'var(--ink)' }}>
@@ -236,10 +274,10 @@ export default function DashboardPage() {
         {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6 animate-fade-up stagger-1">
           {[
-            { label: 'Total tasks', value: stats.total,     color: 'var(--ink)' },
+            { label: 'Total tasks', value: stats.total,     color: 'var(--ink)'   },
             { label: 'Completed',   value: stats.completed, color: 'var(--green)' },
             { label: 'In review',   value: stats.review,    color: 'var(--amber)' },
-            { label: 'Overdue',     value: stats.overdue,   color: 'var(--red)' },
+            { label: 'Overdue',     value: stats.overdue,   color: 'var(--red)'   },
           ].map(stat => (
             <div key={stat.label} className="card p-5">
               <div className="text-xs font-medium mb-2" style={{ color: 'var(--ink-muted)' }}>{stat.label}</div>
@@ -248,11 +286,11 @@ export default function DashboardPage() {
           ))}
         </div>
 
-        {/* Progress bar */}
+        {/* Sprint progress */}
         {sprint && (
           <div className="card p-5 mb-8 animate-fade-up stagger-2">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-semibold" style={{ color: 'var(--ink)' }}>Sprint progress</span>
+              <span className="text-sm font-semibold" style={{ color: 'var(--ink)' }}>Sprint progress — {sprint.title}</span>
               <span className="text-sm font-bold" style={{ color: 'var(--accent)' }}>{progress}%</span>
             </div>
             <div className="h-2 rounded-full overflow-hidden" style={{ background: 'var(--surface-2)' }}>
@@ -272,28 +310,33 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Kanban */}
+        {/* Kanban board */}
         <div className="animate-fade-up stagger-3">
           <div className="flex items-center justify-between mb-5">
             <h2 className="text-xl font-display" style={{ color: 'var(--ink)' }}>
               {sprint?.title || 'My Tasks'}
             </h2>
-            {sprint && (
-              <Link href="/internship/tasks"
-                className="text-sm font-medium flex items-center gap-1.5"
-                style={{ color: 'var(--accent)' }}>
-                View all
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
-              </Link>
-            )}
+            <Link href="/internship/tasks"
+              className="text-sm font-medium flex items-center gap-1.5"
+              style={{ color: 'var(--accent)' }}>
+              View all
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+            </Link>
           </div>
+
           {tasks.length === 0 ? (
             <div className="card p-16 text-center">
               <div className="text-4xl mb-3">🎯</div>
-              <h3 className="font-display font-bold mb-1" style={{ color: 'var(--ink)' }}>No tasks assigned yet</h3>
-              <p className="text-sm" style={{ color: 'var(--ink-muted)' }}>Your mentor will assign tasks when the sprint starts</p>
+              <h3 className="font-display font-bold mb-1" style={{ color: 'var(--ink)' }}>No tasks yet</h3>
+              <p className="text-sm mb-1" style={{ color: 'var(--ink-muted)' }}>
+                Make sure tasks in the database have your user ID in <code className="text-xs bg-gray-100 px-1 rounded">assigned_to</code> and the correct <code className="text-xs bg-gray-100 px-1 rounded">project_id</code>.
+              </p>
+              <Link href="/internship/project"
+                className="btn-primary px-6 py-2.5 text-sm inline-flex items-center gap-2 mt-4">
+                🏢 View My Project
+              </Link>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">

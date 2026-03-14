@@ -26,7 +26,7 @@ export default function CallbackPage() {
         if (data.user.role === 'intern' && !data.user.intern_role) {
           router.replace('/auth/onboarding')
         } else {
-          router.replace('/dashboard')
+          router.replace('/internship/project')
         }
       } catch (err) {
         console.error('Auth callback error:', err)

@@ -1,18 +1,21 @@
-import api from '@/lib/api'
+// lib/taskApi.js
+// Matches the actual backend routes in tasks.py
+
+import api from './api'
 
 export const taskApi = {
-  // Get tasks for the current intern's assigned project only
+  // GET /api/tasks/my-tasks
   getMyTasks: () => api.get('/api/tasks/my-tasks'),
 
-  // Get active sprint for current intern's project
-  getActiveSprints: () => api.get('/api/tasks/sprints/active'),
+  // GET /api/tasks/sprints/active
+  getActiveSprint: () => api.get('/api/tasks/sprints/active'),
 
-  // Get a single task
+  // GET /api/tasks/:id
   getTask: (id) => api.get(`/api/tasks/${id}`),
 
-  // Update task status
-  updateTaskStatus: (id, status) => api.patch(`/api/tasks/${id}/status`, { status }),
+  // PATCH /api/tasks/:id/status
+  updateStatus: (id, status) => api.patch(`/api/tasks/${id}/status`, { status }),
 
-  // Update full task
-  updateTask: (id, data) => api.patch(`/api/tasks/${id}`, data),
+  // PATCH /api/tasks/:id  (submit PR url)
+  submitPR: (id, pr_url) => api.patch(`/api/tasks/${id}`, { github_pr_url: pr_url }),
 }

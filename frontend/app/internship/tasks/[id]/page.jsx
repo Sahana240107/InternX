@@ -35,7 +35,7 @@ export default function TaskDetailPage() {
     try {
       const res = await taskApi.getTask(id)
       setTask(res.data)
-      if (res.data.pr_url) setPrUrl(res.data.pr_url)
+      if (res.data.github_pr_url) setPrUrl(res.data.github_pr_url)
     } catch {
       toast.error('Task not found')
       router.push('/dashboard')
@@ -61,7 +61,10 @@ export default function TaskDetailPage() {
     if (!prUrl.trim()) return
     setActionLoading(true)
     try {
-      const res = await taskApi.submitPR(task.id, prUrl.trim())
+      // submitPR patches github_pr_url and moves status to review
+      await taskApi.submitPR(task.id, prUrl.trim())
+      await taskApi.updateStatus(task.id, 'review')
+      const res = await taskApi.getTask(task.id)
       setTask(res.data)
       setShowPrInput(false)
       toast.success('PR submitted for review! 🚀')
@@ -99,7 +102,7 @@ export default function TaskDetailPage() {
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
-          Back
+          Dashboard
         </Link>
         <div className="w-px h-4" style={{ background: 'var(--border)' }} />
         <span className="text-sm font-medium truncate" style={{ color: 'var(--ink-muted)' }}>{task.title}</span>
@@ -107,6 +110,7 @@ export default function TaskDetailPage() {
 
       <main className="max-w-3xl mx-auto px-6 py-10">
         <div className="animate-fade-up">
+
           {/* Main card */}
           <div className="card p-8 mb-5">
             <div className="flex items-start justify-between gap-4 mb-4">
@@ -156,7 +160,7 @@ export default function TaskDetailPage() {
             </div>
           )}
 
-          {/* Done feedback */}
+          {/* Done — score & feedback */}
           {task.status === 'done' && (
             <div className="card p-6 mb-5" style={{ border: '1.5px solid var(--green)', background: 'var(--green-soft)' }}>
               <div className="flex items-center gap-2 mb-3">
@@ -178,13 +182,13 @@ export default function TaskDetailPage() {
             </div>
           )}
 
-          {/* PR submitted */}
-          {task.pr_url && task.status === 'review' && (
+          {/* PR submitted — in review */}
+          {task.github_pr_url && task.status === 'review' && (
             <div className="card p-6 mb-5" style={{ border: '1.5px solid #dbeafe', background: 'var(--blue-soft)' }}>
               <h3 className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: '#1e40af' }}>PR Submitted</h3>
-              <a href={task.pr_url} target="_blank" rel="noopener noreferrer"
+              <a href={task.github_pr_url} target="_blank" rel="noopener noreferrer"
                 className="text-sm font-medium break-all" style={{ color: 'var(--blue)' }}>
-                {task.pr_url}
+                {task.github_pr_url}
               </a>
             </div>
           )}
@@ -204,11 +208,14 @@ export default function TaskDetailPage() {
               showPrInput ? (
                 <div className="flex flex-col gap-3">
                   <input type="url" value={prUrl} onChange={e => setPrUrl(e.target.value)}
-                    placeholder="https://github.com/org/repo/pull/1" className="input-field" />
+                    placeholder="https://github.com/org/repo/pull/1"
+                    className="input-field"
+                    style={{ width: '100%', padding: '10px 14px', borderRadius: '12px', border: '1.5px solid var(--border)', fontSize: '14px', outline: 'none' }}
+                  />
                   <div className="flex gap-2">
                     <button onClick={handleSubmitPR} disabled={actionLoading || !prUrl.trim()}
                       className="btn-primary flex-1 justify-center py-3">
-                      {actionLoading ? 'Submitting...' : 'Submit PR'}
+                      {actionLoading ? 'Submitting...' : 'Submit PR for Review'}
                     </button>
                     <button onClick={() => setShowPrInput(false)} className="btn-ghost px-5">Cancel</button>
                   </div>
@@ -236,6 +243,11 @@ export default function TaskDetailPage() {
               <div className="text-center py-4">
                 <div className="text-3xl mb-2">🎉</div>
                 <p className="text-sm font-semibold font-display" style={{ color: 'var(--green)' }}>Task complete!</p>
+                <Link href="/dashboard"
+                  className="mt-3 inline-flex items-center gap-2 text-sm font-medium"
+                  style={{ color: 'var(--accent)' }}>
+                  ← Back to Dashboard
+                </Link>
               </div>
             )}
           </div>
